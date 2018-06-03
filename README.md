@@ -1,5 +1,8 @@
 # PyLyrics
 
+
+##Requires `playerctl`
+
 Downloads and plays lyrics of the currently playing song, synced with elapsed time.
 
 Uses the currently playing song by quering mpd, download the lyrics and syncs with the currently playing song.
