@@ -131,7 +131,7 @@ USAGE: pylryics.py [cmus]
 		# print '[T]', currentTitle, oldTitle
 		
 		if currentArtist!=oldArtist or currentTitle!=oldTitle:
-			if currentTitle=='' or currentArtist=='':
+			if currentTitle=='' and currentArtist=='':
 				print_lyrics('...Waiting for song...')
 				time.sleep(0.5)
 				continue
