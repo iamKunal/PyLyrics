@@ -21,12 +21,33 @@ def getTTYSize():
 oldArtist,oldTitle = [None]*2
 
 
-
-def getSongInfo():
+def getMpdInfo():
 	title = subprocess.check_output(['playerctl', 'metadata', 'title'])
 	artist = subprocess.check_output(['playerctl', 'metadata', 'artist'])
 	time_elapsed = int(float(subprocess.check_output(['playerctl', 'position'])))
 	return title, artist, time_elapsed
+
+def getCmusInfo():
+	query = subprocess.check_output(['cmus-remote', '--query']).strip()
+	time_elapsed = int((re.findall('position .*?\n', query)[0].strip()).split()[1])
+	try:
+		artist = ' '.join((re.findall('tag artist .*?\n', query)[0].strip()).split()[2:])
+		title = ' '.join((re.findall('tag title .*?\n', query)[0].strip()).split()[2:])
+	except IndexError:
+		title = ' '.join((re.findall('file .*?\n', query)[0].strip()).split()[1:]).split('/')[-1]
+		title =  re.sub('www.[a-zA-Z0-9-\.]*', '', title)
+		title = re.sub('.mp3', '', title)
+		artist = ' '
+	return title, artist, time_elapsed+1
+
+
+
+def getSongInfo():
+	if len(sys.argv)==2:
+		if sys.argv[1].lower() == 'cmus':
+			return getCmusInfo()
+	return getMpdInfo()
+
 
 def getGoogle(title,artist):
 	headers = {
@@ -39,8 +60,11 @@ def getGoogle(title,artist):
 	)
 
 	response = requests.get('https://www.google.com/search', headers=headers, params=params, verify=False)
-	result = re.findall('href=\"/url\?q=.*?&amp', response.text)[0][len('href="/url?q='):-len('&amp')]
-	result = urllib.unquote(result)
+	try:
+		result = re.findall('href=\"/url\?q=.*?getsubtitle\.aspx.*?&amp', response.text)[0][len('href="/url?q='):-len('&amp')]
+		result = urllib.unquote(result)
+	except IndexError:
+		result=''
 	return result
 
 def time_to_secs(string):
@@ -93,18 +117,33 @@ def display_lyrics(full_lyrics, time_elapsed):
 		print_lyrics('')
 
 url=lyrics=None
-while True:
-	currentTitle, currentArtist, time_elapsed = getSongInfo()
+if __name__=='__main__':
+	if len(sys.argv)==2:
+		if sys.argv[1].lower() == '--help':
+			hlp='''
+USAGE: pylryics.py [cmus]
+			'''
+			print hlp
+			sys.exit()
+	while True:
+		currentTitle, currentArtist, time_elapsed = getSongInfo()
+		# print '[A]',currentArtist, oldArtist
+		# print '[T]', currentTitle, oldTitle
+		
+		if currentArtist!=oldArtist or currentTitle!=oldTitle:
+			if currentTitle=='' and currentArtist=='':
+				print_lyrics('...Waiting for song...')
+				time.sleep(0.5)
+				continue
+			url = getGoogle(currentTitle, currentArtist)
+			# print url
+			if url=='':
+				print_lyrics('...Waiting for song...')
+				time.sleep(0.5)
+				continue
+			lyrics = getsyncedLyrics(url)
 
-	if currentArtist!=oldArtist and currentTitle!=oldTitle:
-		if currentTitle=='' or currentArtist=='':
-			print_lyrics('...Waiting for song...')
-			time.sleep(0.5)
-			continue
-		url = getGoogle(currentTitle, currentArtist)
-		lyrics = getsyncedLyrics(url)
-
-	display_lyrics(lyrics, time_elapsed)
-	time.sleep(0.5)
-	oldArtist=currentArtist
-	oldTitle=currentTitle
+		display_lyrics(lyrics, time_elapsed)
+		time.sleep(0.5)
+		oldArtist=currentArtist
+		oldTitle=currentTitle
