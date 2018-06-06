@@ -127,13 +127,16 @@ USAGE: pylryics.py [cmus]
 			sys.exit()
 	while True:
 		currentTitle, currentArtist, time_elapsed = getSongInfo()
-
-		if currentArtist!=oldArtist and currentTitle!=oldTitle:
+		# print '[A]',currentArtist, oldArtist
+		# print '[T]', currentTitle, oldTitle
+		
+		if currentArtist!=oldArtist or currentTitle!=oldTitle:
 			if currentTitle=='' or currentArtist=='':
 				print_lyrics('...Waiting for song...')
 				time.sleep(0.5)
 				continue
 			url = getGoogle(currentTitle, currentArtist)
+			# print url
 			if url=='':
 				print_lyrics('...Waiting for song...')
 				time.sleep(0.5)
